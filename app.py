@@ -17,7 +17,7 @@ st.set_page_config(
     layout="centered",
 )
 
-st.title("📚 Huiswerk- en Toetsplanner voor Phiene")
+st.title("📚 Huiswerkplanner")
 st.write(
     "Plan hieronder direct je toetsen voor vak 1, 2 en 3, kies per onderdeel de"
     " dag en vink af wat klaar is!"
