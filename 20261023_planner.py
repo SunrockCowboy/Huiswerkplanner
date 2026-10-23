@@ -12,12 +12,12 @@ except Exception:
   HAS_DOCX = False
 
 st.set_page_config(
-    page_title="Huiswerkplanner",
+    page_title="Huiswerkplanner voor bazen",
     page_icon="📚",
     layout="centered",
 )
 
-st.title("📚 Huiswerkplanner")
+st.title("📚 Huiswerkplanner voor bazen")
 st.write(
     "Kies hieronder voor hoeveel toetsen je een planning wilt maken, vul per"
     " vak de onderdelen in en vink af wat klaar is!"
