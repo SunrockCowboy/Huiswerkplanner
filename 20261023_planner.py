@@ -114,7 +114,7 @@ def genereer_planning():
       st.session_state.planning_gegenereerd = False
       st.session_state.foutmelding = (
           "⚠️ Kies voor alle toetsen een datum in de toekomst (op z'n"
-          " vroegst morgen)!"
+          " vroegst vandaag)!"
       )
       return
 
@@ -124,13 +124,13 @@ def genereer_planning():
   laatste_toetsdatum = max(alle_toetsdatums)
 
   beschikbare_datums = []
-  d = vandaag + timedelta(days=1)
+  d = vandaag  # Start vanaf vandaag in plaats van vandaag + 1 dag
   while d <= laatste_toetsdatum:
     beschikbare_datums.append(d)
     d += timedelta(days=1)
 
   if not beschikbare_datums:
-    beschikbare_datums = [vandaag + timedelta(days=1)]
+    beschikbare_datums = [vandaag]
 
   geconstrueerde_dagen = {}
   for dag_d in beschikbare_datums:
@@ -144,13 +144,13 @@ def genereer_planning():
     t_datum = st.session_state.get(f"toetsdatum_{t_idx}", toets["toetsdatum"])
 
     toets_specifieke_datums = []
-    d_sub = vandaag + timedelta(days=1)
+    d_sub = vandaag  # Start vanaf vandaag voor deze toets
     while d_sub < t_datum:
       toets_specifieke_datums.append(d_sub)
       d_sub += timedelta(days=1)
 
     if not toets_specifieke_datums:
-      toets_specifieke_datums = [vandaag + timedelta(days=1)]
+      toets_specifieke_datums = [vandaag]
 
     for taak_idx, taak in enumerate(toets["leertaken"]):
       eenheid = taak["eenheid"]
@@ -262,229 +262,4 @@ if aantal_toetsen != len(st.session_state.toetsen):
     ]
     while len(st.session_state.toetsen) < aantal_toetsen:
       idx = len(st.session_state.toetsen)
-      vak_naam = standaard_vakken[idx % len(standaard_vakken)]
-      st.session_state.toetsen.append({
-          "vak": vak_naam,
-          "toetsdatum": date.today() + timedelta(days=(idx + 1) * 2),
-          "leertaken": [
-              {
-                  "eenheid": "woordjes",
-                  "aantal": None,
-                  "van_blz": 1,
-                  "tot_blz": 10,
-                  "van_par": "1.1",
-                  "tot_par": "1.2",
-                  "wat_omschrijving": "",
-                  "gekozen_dag_str": "🔄 Elke dag",
-              }
-          ],
-      })
-  else:
-    st.session_state.toetsen = st.session_state.toetsen[:aantal_toetsen]
-  st.rerun()
-
-st.markdown("---")
-
-# --- DYNAMISCH INVOERVELD PER TOETS ---
-for t_idx, toets in enumerate(st.session_state.toetsen):
-  with st.container():
-    c_titel, c_del_toets = st.columns([3, 1])
-    with c_titel:
-      st.subheader(f"📌 Toets {t_idx+1}")
-    with c_del_toets:
-      if len(st.session_state.toetsen) > 1:
-        if st.button("🗑️ Wis toets", key=f"del_toets_{t_idx}"):
-          verwijder_toets(t_idx)
-          st.rerun()
-
-    col_v, col_d = st.columns(2)
-    with col_v:
-      vak_val = st.text_input(
-          f"Schoolvak {t_idx+1}",
-          value=toets["vak"],
-          key=f"vak_{t_idx}",
-      )
-      st.session_state.toetsen[t_idx]["vak"] = vak_val
-    with col_d:
-      morgen = date.today() + timedelta(days=1)
-      toets_val = st.date_input(
-          f"Toetsdatum vak {t_idx+1}",
-          value=toets.get("toetsdatum", morgen),
-          key=f"toetsdatum_{t_idx}",
-      )
-      st.session_state.toetsen[t_idx]["toetsdatum"] = toets_val
-
-    huidige_t_datum = st.session_state.get(f"toetsdatum_{t_idx}", morgen)
-    beschikbare_opties = ["🔄 Elke dag"]
-    d_loop = date.today() + timedelta(days=1)
-    while d_loop < huidige_t_datum:
-      beschikbare_opties.append(d_loop.strftime("%d-%m-%Y"))
-      d_loop += timedelta(days=1)
-
-    st.markdown(f"*Wat moet je voor {vak_val} leren?*")
-
-    for taak_idx, taak in enumerate(toets["leertaken"]):
-      c_taak_titel, c_del_taak = st.columns([3, 1])
-      with c_taak_titel:
-        st.markdown(f"&nbsp;&nbsp;&nbsp;&bull; *Onderdeel {taak_idx+1}*")
-      with c_del_taak:
-        if len(toets["leertaken"]) > 1:
-          if st.button("🗑️ Wis", key=f"del_taak_{t_idx}_{taak_idx}"):
-            verwijder_taak_van_toets(t_idx, taak_idx)
-            st.rerun()
-
-      col1, col2, col3 = st.columns([2, 2, 2])
-
-      with col1:
-        gekozen_eenheid = st.selectbox(
-            "Soort stof",
-            [
-                "woordjes",
-                "bladzijden",
-                "paragrafen",
-                "sommen",
-                "grammatica-regels",
-            ],
-            index=[
-                "woordjes",
-                "bladzijden",
-                "paragrafen",
-                "sommen",
-                "grammatica-regels",
-            ].index(taak["eenheid"])
-            if taak["eenheid"]
-            in [
-                "woordjes",
-                "bladzijden",
-                "paragrafen",
-                "sommen",
-                "grammatica-regels",
-            ]
-            else 0,
-            key=f"eenheid_{t_idx}_{taak_idx}",
-        )
-        toets["leertaken"][taak_idx]["eenheid"] = gekozen_eenheid
-
-      with col2:
-        if gekozen_eenheid == "bladzijden":
-          subcol1, subcol2 = st.columns(2)
-          with subcol1:
-            toets["leertaken"][taak_idx]["van_blz"] = st.number_input(
-                "Van blz.",
-                min_value=1,
-                value=taak.get("van_blz", 1),
-                key=f"van_{t_idx}_{taak_idx}",
-            )
-          with subcol2:
-            toets["leertaken"][taak_idx]["tot_blz"] = st.number_input(
-                "T/m blz.",
-                min_value=1,
-                value=taak.get("tot_blz", 10),
-                key=f"tot_{t_idx}_{taak_idx}",
-            )
-
-        elif gekozen_eenheid == "paragrafen":
-          subcol1, subcol2 = st.columns(2)
-          with subcol1:
-            toets["leertaken"][taak_idx]["van_par"] = st.text_input(
-                "Van par.",
-                value=str(taak.get("van_par", "3.1")),
-                key=f"van_p_{t_idx}_{taak_idx}",
-            )
-          with subcol2:
-            toets["leertaken"][taak_idx]["tot_par"] = st.text_input(
-                "T/m par.",
-                value=str(taak.get("tot_par", "3.4")),
-                key=f"tot_p_{t_idx}_{taak_idx}",
-            )
-
-        else:
-          toets["leertaken"][taak_idx]["aantal"] = st.number_input(
-              "Aantal",
-              min_value=1,
-              value=taak.get("aantal", None),
-              key=f"aantal_{t_idx}_{taak_idx}",
-          )
-
-      with col3:
-        huidige_val = taak.get("gekozen_dag_str", "🔄 Elke dag")
-        if huidige_val not in beschikbare_opties:
-          huidige_val = beschikbare_opties[0]
-
-        gekozen_dag_str = st.selectbox(
-            "Op welke dag leren?",
-            beschikbare_opties,
-            index=(
-                beschikbare_opties.index(huidige_val)
-                if huidige_val in beschikbare_opties
-                else 0
-            ),
-            key=f"dag_select_{t_idx}_{taak_idx}",
-        )
-        toets["leertaken"][taak_idx]["gekozen_dag_str"] = gekozen_dag_str
-
-      toets["leertaken"][taak_idx]["wat_omschrijving"] = st.text_input(
-          "Wat precies? (bijv. 'Alleen werkwoorden')",
-          value=taak.get("wat_omschrijving", ""),
-          key=f"wat_{t_idx}_{taak_idx}",
-      )
-      st.markdown("")
-
-    if st.button(
-        f"➕ Voeg extra onderdeel toe voor {vak_val}", key=f"add_taak_{t_idx}"
-    ):
-      voeg_taak_toe_aan_toets(t_idx)
-      st.rerun()
-
-    st.divider()
-
-st.write("")
-st.button(
-    "🚀 Genereer Planning voor alle geselecteerde toetsen",
-    on_click=genereer_planning,
-)
-
-if st.session_state.foutmelding:
-  st.error(st.session_state.foutmelding)
-
-# --- OVERZICHT, DOWNLOAD & AFVINKEN ---
-if st.session_state.get("planning_gegenereerd", False):
-  st.divider()
-  st.subheader("📌 Jouw Gecombineerde Studieplanning:")
-
-  huidige_planning = st.session_state.get("dagen_planning", [])
-
-  if HAS_DOCX:
-    word_stream = maak_word_document(huidige_planning)
-    st.download_button(
-        label="📄 Download als Word-document (.docx)",
-        data=word_stream,
-        file_name=f"Studieplanning_{date.today().strftime('%d-%m-%Y')}.docx",
-        mime=(
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        ),
-    )
-  else:
-    st.warning("Installeer python-docx voor Word-export.")
-
-  st.markdown("---")
-  st.subheader("✅ Vink hier je geleerde taken af:")
-
-  heeft_taken = False
-  for dag_idx, dag in enumerate(huidige_planning):
-    dag_titel = dag.get("header", f"Dag {dag_idx+1}")
-    items = dag.get("items", [])
-
-    if items:
-      heeft_taken = True
-      st.markdown(f"**{dag_titel}**")
-      for item_idx, item_tekst in enumerate(items):
-        checkbox_key = f"check_{dag_idx}_{item_idx}_{item_tekst}"
-        is_gelukt = st.checkbox(item_tekst, key=checkbox_key)
-
-        if is_gelukt:
-          st.success(f"🎉 **Top gedaan!** ({item_tekst})")
-      st.write("")
-
-  if not heeft_taken:
-    st.info("Er zijn nog geen taken ingepland.")
+      vak_naam = standaard_vak
